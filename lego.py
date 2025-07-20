@@ -70,7 +70,7 @@ motor_d = buildhat.Motor('D')
 motor_c.start(5)
 motor_d.start(100)
 
-time.sleep(2)
+time.sleep(5)
 
 motor_c.stop()
 motor_d.stop()
