@@ -48,7 +48,7 @@ picam2.start()
 # Optional delay to allow camera to adjust exposure
 time.sleep(2)
 
-filename = f"image_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+filename = f"tmp/image_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
 picam2.capture_file(filename)
 
 print(f"Saved image as {filename}")
