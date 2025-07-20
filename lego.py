@@ -12,6 +12,8 @@
 #
 # Validate git already installed:
 # sudo apt install git -y
+# git clone https://github.com/cheapshot2000/legopi.git
+# cd legopi/
 #
 # Install full python and virtual environments:
 # sudo apt install python3-full python3-venv
