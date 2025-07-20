@@ -15,8 +15,9 @@
 # git clone https://github.com/cheapshot2000/legopi.git
 # cd legopi/
 #
-# Install full python and virtual environments:
-# sudo apt install python3-full python3-venv
+# Install full python, virtual environments, and camera:
+# sudo apt install python3-full python3-venv python3-picamera2 -y
+# sudo reboot
 #
 # Create and activate a virtual environment to install modules:
 # python3 -m venv ~/buildhat-venv
@@ -26,16 +27,46 @@
 # pip  install buildhat
 #
 
-
-
-from buildhat import Motor
-from buildhat import ColorDistanceSensor
+import datetime
 import time
+import buildhat
+from picamera2 import Picamera2
 
-motor_c = Motor('C')
-motor_d = Motor('D')
-# sensor = ColorDistanceSensor('B')
-color = ColorDistanceSensor('B')
+# Lights, Camera, Action!
+light = buildhat.Light('A')
+light.on()
+time.sleep(2)
+
+picam2 = Picamera2()
+picam2.configure(picam2.create_still_configuration())
+picam2.start()
+
+# Optional delay to allow camera to adjust exposure
+picam2.sleep(2)
+
+filename = f"image_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+picam2.capture_file(filename)
+
+print(f"Saved image as {filename}")
+
+light.off()
+
+color = buildhat.ColorDistanceSensor('B')
+print("Waiting for color white")
+color.wait_until_color("white")
+print("Got white")
+
+motor_c = buildhat.Motor('C')
+motor_d = buildhat.Motor('D')
+
+motor_c.start(5)
+motor_d.start(100)
+
+time.sleep(2)
+
+motor_c.stop()
+motor_d.stop()
+
 
 def handle_distance(val):
     if 50 < val < 150:
@@ -43,13 +74,6 @@ def handle_distance(val):
     else:
         print("Out of range")
 
-motor_c.start(5)
-motor_d.start(100)
-
-time.sleep(4)
-
-motor_c.stop()
-motor_d.stop()
 
 # print("Distance", color.get_distance())
 # print("RGBI", color.get_color_rgb())
