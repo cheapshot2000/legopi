@@ -31,6 +31,10 @@
 # pip  install buildhat
 #
 
+# Stop libcamera output annoyance - 3 is error level only.
+import os
+os.environ["LIBCAMERA_LOG_LEVELS"] = "*:3"
+
 import time
 import buildhat
 from datetime import datetime
