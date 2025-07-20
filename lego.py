@@ -7,8 +7,9 @@
 # - "Would you like the serial port hardware to be enabled?" → Yes
 # Reboot the Pi
 #
-# Install python stuff now:
+# Get the system updated.
 # sudo apt update
+# sudo apt full-upgrade
 #
 # Validate git already installed:
 # sudo apt install git -y
