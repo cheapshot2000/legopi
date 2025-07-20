@@ -20,17 +20,20 @@
 # sudo apt install python3-full python3-venv python3-picamera2 -y
 # sudo reboot
 #
+# Make sure the camera works
+# libcamera-hello
+#
 # Create and activate a virtual environment to install modules:
-# python3 -m venv ~/buildhat-venv
+# python3 -m venv --system-site-packages ~/buildhat-venv
 # source ~/buildhat-venv/bin/activate
 #
 # Install Lego Buildhat module:
 # pip  install buildhat
 #
 
-import datetime
 import time
 import buildhat
+from datetime import datetime
 from picamera2 import Picamera2
 
 # Lights, Camera, Action!
@@ -43,7 +46,7 @@ picam2.configure(picam2.create_still_configuration())
 picam2.start()
 
 # Optional delay to allow camera to adjust exposure
-picam2.sleep(2)
+time.sleep(2)
 
 filename = f"image_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
 picam2.capture_file(filename)
