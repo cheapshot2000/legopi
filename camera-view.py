@@ -19,10 +19,16 @@ picam2.start()
 # Wait briefly for camera to warm up
 time.sleep(2)
 
-# Trigger autofocus
-picam2.set_controls({"AfMode": 2})       # 1 = Auto. # 2 = Continuous
-picam2.set_controls({"AfTrigger": 0})    # 0 = Start single autofocus scan
-time.sleep(2) # Allow autofocus to settle
+# Set camera configuration
+picam2.set_controls({
+    "AeEnable": False,          # Disable auto exposure
+    "AfMode": 2,                # 1 = Auto. # 2 = Continuous
+    "AfTrigger": 0,             # 0 = Start single autofocus scan
+    "ExposureTime": 20000,       # in microseconds (e.g., 20000 = 1/50s)
+    "AnalogueGain": 6.0         # Higher = brighter (range 1.0–~16.0)
+})
+
+time.sleep(5) # Allow autofocus to settle
 
 # picam2.set_controls({"AfMode": 0})  # 0 = Manual
 # picam2.set_controls({"LensPosition": 0.0})  # Adjust from ~90 to 160 for close objects

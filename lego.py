@@ -30,6 +30,9 @@
 # Install Lego Buildhat module:
 # pip  install buildhat
 #
+# Install OpenCV for bounding boxes
+# pip install opencv-python-headless
+#
 
 # Stop libcamera output annoyance - 3 is error level only.
 import os
