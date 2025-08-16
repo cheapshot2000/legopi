@@ -11,9 +11,11 @@
 # sudo apt update
 # sudo apt full-upgrade
 #
-# Validate git already installed:
+# Validate git already installed and configured:
 # sudo apt install git -y
 # git clone https://github.com/cheapshot2000/legopi.git
+# git config --global user.email "you@example.com"
+# git config --global user.name "Your Name"
 # cd legopi/
 #
 # Install full python, virtual environments, and camera:
@@ -21,7 +23,7 @@
 # sudo reboot
 #
 # Make sure the camera works
-# libcamera-hello
+# rpicam-hello
 #
 # Create and activate a virtual environment to install modules:
 # python3 -m venv --system-site-packages ~/buildhat-venv
@@ -33,6 +35,10 @@
 # Install OpenCV for bounding boxes
 # pip install opencv-python-headless
 #
+# Resolve simplejpeg build issues
+# pip install numpy==2.2.6
+# pip uninstall simplejpeg -y
+# pip install --no-cache-dir --force-reinstall simplejpeg
 
 # Stop libcamera output annoyance - 3 is error level only.
 import os
