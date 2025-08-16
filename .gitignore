@@ -1,5 +1,5 @@
 # Folder for images from picamera
-tmp/
+tmp/*.jpg
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
