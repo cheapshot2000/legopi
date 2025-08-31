@@ -8,9 +8,9 @@ from datetime import datetime
 from picamera2 import Picamera2
 
 # Lights, Camera, Action!
-# light = buildhat.Light('A')
-# light.on()
-# time.sleep(2)
+light = buildhat.Light('D')
+light.on()
+time.sleep(2)
 
 picam2 = Picamera2()
 picam2.configure(picam2.create_still_configuration())
@@ -39,4 +39,4 @@ picam2.capture_file(filename)
 print(f"Saved image as {filename}")
 
 
-# light.off()
+light.off()
