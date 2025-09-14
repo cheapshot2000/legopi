@@ -10,14 +10,14 @@ from picamera2 import Picamera2
 # Lights, Camera, Action!
 light = buildhat.Light('D')
 light.on()
-time.sleep(2)
+# time.sleep(1)
 
 picam2 = Picamera2()
 picam2.configure(picam2.create_still_configuration())
 picam2.start()
 
 # Wait briefly for camera to warm up
-time.sleep(2)
+time.sleep(1)
 
 # Set camera configuration
 picam2.set_controls({
@@ -28,7 +28,7 @@ picam2.set_controls({
     "AnalogueGain": 6.0         # Higher = brighter (range 1.0–~16.0)
 })
 
-time.sleep(5) # Allow autofocus to settle
+time.sleep(2) # Allow autofocus to settle
 
 # picam2.set_controls({"AfMode": 0})  # 0 = Manual
 # picam2.set_controls({"LensPosition": 0.0})  # Adjust from ~90 to 160 for close objects
