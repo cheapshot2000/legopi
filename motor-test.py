@@ -6,7 +6,7 @@ from datetime import datetime
 # # TWEAKS GO HERE
 # LIGHTS_PORT = 'C'
 CONVEYOR_PORT = 'A'
-CONVEYOR_MOTOR_SPEED = 10
+CONVEYOR_MOTOR_SPEED = 20
 # Speed 10 moves two technic treads per 1/10th of a second.
 
 conveyor = buildhat.Motor(CONVEYOR_PORT)
@@ -17,13 +17,12 @@ conveyor = buildhat.Motor(CONVEYOR_PORT)
 # conveyor.run_for_degrees(45)
 # conveyor.run_for_rotations(.5)
 # time.sleep(.4)
-# conveyor.reverse()
 # conveyor.plimit(1)
-# conveyor.run_for_seconds(4, 100)
-# conveyor.coast()
-# conveyor.release == True
-# time.sleep(10)
-# motor_a.stop()
+conveyor.run_for_seconds(3, -100)
+conveyor.coast()
+conveyor.release == True
+time.sleep(1)
+conveyor.stop()
 
 def handle_motor(speed, pos, apos):
     """Motor data
@@ -57,7 +56,7 @@ conveyor.set_default_speed(10)
 #     conveyor.start(speed=i)
 #     time.sleep(.1)
 print("Start motor")
-# conveyor.start()
+conveyor.start()
 
 toggle = False
 print("Press any key to toggle (Ctrl+C to quit).")
