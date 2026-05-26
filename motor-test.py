@@ -4,7 +4,7 @@ import buildhat
 from datetime import datetime
 
 # # TWEAKS GO HERE
-LIGHTS_PORT = 'C'
+# LIGHTS_PORT = 'C'
 CONVEYOR_PORT = 'A'
 CONVEYOR_MOTOR_SPEED = 10
 # Speed 10 moves two technic treads per 1/10th of a second.
