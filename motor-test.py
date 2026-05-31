@@ -1,50 +1,42 @@
-
 import time
-import buildhat
-from datetime import datetime
+from datetime import UTC, datetime
 
-# # TWEAKS GO HERE
-COLOR_DISTANCE_SENSOR_PORT = 'D'
-MOTOR_PORT = 'A'
-MOTOR_MOTOR_SPEED = 20
+import buildhat
+
+
+# Hardware ports
+COLOR_DISTANCE_SENSOR_PORT = "D"
+MOTOR_PORT = "A"
+
+# Motor behavior
+MOTOR_SPEED = 20
+MOTOR_POWER_LIMIT = 1.0
+
+# Color behavior
+START_COLOR = "white"
+ALWAYS_STOP_COLOR = "blue"
+SWITCH_STOP_COLORS = ("red", "green")
+
+# Load protection
+STARTUP_GRACE_SECONDS = 1.5
+STUCK_TIMEOUT_SECONDS = 1.5
+STRAIN_ARM_SPEED = abs(MOTOR_SPEED)
+STRAIN_MIN_SPEED = 15
+STRAIN_TIMEOUT_SECONDS = 0.5
+
 # Speed 10 moves two technic treads per 1/10th of a second.
 
-last_color = None
 
-# motor.start(-10)
-# motor.coast()
-# time.sleep(10)
-# motor.run_for_degrees(45)
-# motor.run_for_rotations(.5)
-# time.sleep(.4)
-# motor.plimit(1)
+def timestamp():
+    return datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S.%f")[:-5]
 
-
-
-def handle_motor(speed, pos, apos):
-    d = datetime.utcnow()
-
-    distance = cds.get_distance()
-    reflected = cds.get_reflected_light()
-    ambient = cds.get_ambient_light()
-    rgb = cds.get_color_rgb()
-    color = cds.get_color()
-
-    print(
-        "Motor Speed",
-        speed,
-        distance,
-        reflected,
-        ambient,
-        rgb,
-        color,
-        d.strftime('%Y-%m-%d %H:%M:%S.%f')[:-5]
-    )
 
 def classify_rgb(rgb):
     r, g, b = rgb
     brightness = r + g + b
 
+    if brightness > 220 and max(r, g, b) - min(r, g, b) < 45:
+        return "white"
     if brightness < 60:
         return "black"
     if g > r * 1.7 and g > b * 1.5:
@@ -55,94 +47,176 @@ def classify_rgb(rgb):
         return "blue"
     return "unknown"
 
-class ColorWatcher:
-    def __init__(self, sensor):
-        self.sensor = sensor
-        self.last_color = None
 
-    def handle_cds(self, data):
+class MotorColorController:
+    def __init__(self, sensor, motor):
+        self.sensor = sensor
+        self.motor = motor
+        self.last_color = None
+        self.last_switch_color = None
+        self.motor_running = False
+        self.motor_started_at = None
+        self.last_motor_moved_at = None
+        self.latest_motor_speed = None
+        self.strain_armed = False
+        self.strain_started_at = None
+
+    def start_motor(self):
+        now = time.monotonic()
+        print("START: white detected; starting motor")
+        self.motor.start(MOTOR_SPEED)
+        self.motor_running = True
+        self.motor_started_at = now
+        self.last_switch_color = None
+        self.last_motor_moved_at = now
+        self.latest_motor_speed = None
+        self.strain_armed = False
+        self.strain_started_at = None
+
+    def stop_motor(self, reason):
+        if not self.motor_running:
+            return
+
+        print(reason)
+        self.motor.stop()
+        self.motor_running = False
+        self.motor_started_at = None
+        self.last_switch_color = None
+        self.last_motor_moved_at = None
+        self.latest_motor_speed = None
+        self.strain_armed = False
+        self.strain_started_at = None
+
+    def handle_color_sensor(self, data):
         rgb = self.sensor.get_color_rgb()
         color = classify_rgb(rgb)
         distance = self.sensor.get_distance()
+        previous_color = self.last_color
 
         if color != self.last_color:
-            print("COLOR CHANGED:", self.last_color, "->", color, rgb, "distance:", distance)
+            print("COLOR:", self.last_color, "->", color, "rgb:", rgb, "distance:", distance)
             self.last_color = color
 
-            if color == "green":
-                print("GREEN ACTION")
-            elif color == "red":
-                print("RED ACTION")
-            elif color == "black":
-                print("BLACK ACTION")
+        if color == START_COLOR:
+            if previous_color != START_COLOR and not self.motor_running:
+                self.start_motor()
+            return
+
+        if color == ALWAYS_STOP_COLOR:
+            self.stop_motor("STOP: blue detected; stopping motor")
+            return
+
+        if color not in SWITCH_STOP_COLORS:
+            return
+
+        if self.last_switch_color and color != self.last_switch_color:
+            self.stop_motor(
+                "STOP: red/green switch "
+                + self.last_switch_color
+                + " -> "
+                + color
+                + "; stopping motor"
+            )
+
+        self.last_switch_color = color
+
+    def handle_motor_rotation(self, speed, position, absolute_position):
+        if not self.motor_running:
+            return
+
+        now = time.monotonic()
+        current_speed = abs(speed)
+        self.latest_motor_speed = current_speed
+        self.last_motor_moved_at = now
+
+        print(
+            "MOTOR:",
+            "speed",
+            speed,
+            "position",
+            position,
+            "absolute position",
+            absolute_position,
+            timestamp(),
+        )
+
+        if self.in_startup_grace(now):
+            return
+
+        if not self.strain_armed:
+            if current_speed >= STRAIN_ARM_SPEED:
+                self.strain_armed = True
+                self.strain_started_at = None
+                print("STRAIN: armed after motor reached speed", current_speed)
+            return
+
+        if current_speed >= STRAIN_MIN_SPEED:
+            self.strain_started_at = None
+            return
+
+        if self.strain_started_at is None:
+            self.strain_started_at = now
+            return
+
+        if now - self.strain_started_at >= STRAIN_TIMEOUT_SECONDS:
+            self.stop_motor(
+                "STRAIN: speed stayed below "
+                + str(STRAIN_MIN_SPEED)
+                + " for "
+                + str(STRAIN_TIMEOUT_SECONDS)
+                + "s; stopping motor"
+            )
+
+    def check_for_stuck_motor(self):
+        if not self.motor_running:
+            return
+
+        now = time.monotonic()
+        if self.in_startup_grace(now):
+            return
+
+        if self.last_motor_moved_at is None:
+            self.last_motor_moved_at = now
+            return
+
+        if now - self.last_motor_moved_at >= STUCK_TIMEOUT_SECONDS:
+            self.stop_motor(
+                "STUCK: no motor position changes for "
+                + str(STUCK_TIMEOUT_SECONDS)
+                + "s; stopping motor"
+            )
+
+    def in_startup_grace(self, now):
+        return (
+            self.motor_started_at is not None
+            and now - self.motor_started_at < STARTUP_GRACE_SECONDS
+        )
 
 
-# Spit out the distance sensor information:
-cds = buildhat.ColorDistanceSensor(COLOR_DISTANCE_SENSOR_PORT)
-watcher = ColorWatcher(cds)
-cds.callback(watcher.handle_cds)
+def main():
+    sensor = buildhat.ColorDistanceSensor(COLOR_DISTANCE_SENSOR_PORT)
+    motor = buildhat.Motor(MOTOR_PORT)
+    motor.plimit(MOTOR_POWER_LIMIT)
+    motor.float()
+
+    controller = MotorColorController(sensor, motor)
+    motor.when_rotated = controller.handle_motor_rotation
+    sensor.callback(controller.handle_color_sensor)
+
+    try:
+        print(
+            "Watching colors. White starts; blue, red/green switch, strain, or stuck stops. "
+            "Press Ctrl+C to quit."
+        )
+        while True:
+            controller.check_for_stuck_motor()
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        print("Stopping.")
+    finally:
+        motor.stop()
+        motor.coast()
 
 
-motor = buildhat.Motor(MOTOR_PORT)
-motor.when_rotated = handle_motor
-info = motor.get()
-print(info)
-motor.float()
-
-
-# Positive equals raising
-# Negative equals lowering
-motor.run_for_seconds(1, -100)
-motor.run_for_seconds(2, 100)
-motor.run_for_seconds(3, -100)
-motor.run_for_seconds(2, 100)
-motor.run_for_seconds(3, -100)
-motor.run_for_seconds(2, 100)
-motor.run_for_seconds(3, -100)
-motor.run_for_seconds(2, 100)
-motor.run_for_seconds(3, -100)
-
-
-motor.when_rotated = None
-motor.coast()
-motor.release = True
-motor.stop()
-
-os._exit(0)
-
-# motor.plimit(1)
-# motor.set_default_speed(10)
-
-# print("Run for degrees 360")
-# motor.run_for_degrees(360)
-# time.sleep(3)
-
-# print("Run for degrees -360")
-# motor.run_for_degrees(-360)
-# time.sleep(3)
-# print("Accelerating motor...")
-# for i in range(8, 10, 1):
-#     motor.start(speed=i)
-#     time.sleep(.1)
-# print("Start motor")
-# motor.start()
-
-# toggle = False
-# print("Press any key to toggle (Ctrl+C to quit).")
-
-# while True:
-#     keyboard.read_event()  # waits for a key event
-#     toggle = not toggle
-#     print(f"Toggled state: {toggle}")
-#     if toggle:
-#         motor.start(speed=10)
-#     else:
-#         motor.stop()
-
-# # motor.stop()
-# motor.float()
-# time.sleep(1)
-
-# while True:
-#     time.sleep(1)
-#     print("Distance", cds.get_distance(), cds.get_reflected_light(), cds.get_ambient_light(), cds.get_color_rgb())
+if __name__ == "__main__":
+    main()
