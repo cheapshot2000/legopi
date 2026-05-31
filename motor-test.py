@@ -4,12 +4,12 @@ import buildhat
 from datetime import datetime
 
 # # TWEAKS GO HERE
-COLOR_DISTANCE_SENSOR_PORT = 'B'
+COLOR_DISTANCE_SENSOR_PORT = 'D'
 MOTOR_PORT = 'A'
 MOTOR_MOTOR_SPEED = 20
 # Speed 10 moves two technic treads per 1/10th of a second.
 
-motor = buildhat.Motor(MOTOR_PORT)
+last_color = None
 
 # motor.start(-10)
 # motor.coast()
@@ -22,53 +22,93 @@ motor = buildhat.Motor(MOTOR_PORT)
 
 
 def handle_motor(speed, pos, apos):
-    """Motor data
-
-    :param speed: Speed of motor
-    :param pos: Position of motor
-    :param apos: Absolute position of motor
-    """
     d = datetime.utcnow()
-    # print("Motor", speed, pos, apos, cds.get_distance(), d.strftime('%Y-%m-%d %H:%M:%S.%f')[:-5])
-    print("Motor Speed ()", speed, cds.get_distance(), cds.get_distance(), cds.get_reflected_light(), cds.get_ambient_light(), cds.get_color_rgb(), d.strftime('%Y-%m-%d %H:%M:%S.%f')[:-5])
 
+    distance = cds.get_distance()
+    reflected = cds.get_reflected_light()
+    ambient = cds.get_ambient_light()
+    rgb = cds.get_color_rgb()
+    color = cds.get_color()
 
+    print(
+        "Motor Speed",
+        speed,
+        distance,
+        reflected,
+        ambient,
+        rgb,
+        color,
+        d.strftime('%Y-%m-%d %H:%M:%S.%f')[:-5]
+    )
 
-# Positive equals raising
-# Negative equals lowering
+def classify_rgb(rgb):
+    r, g, b = rgb
+    brightness = r + g + b
+
+    if brightness < 60:
+        return "black"
+    if g > r * 1.7 and g > b * 1.5:
+        return "green"
+    if r > g * 1.5 and r > b * 1.5:
+        return "red"
+    if b > r * 1.5 and b > g * 1.5:
+        return "blue"
+    return "unknown"
+
+class ColorWatcher:
+    def __init__(self, sensor):
+        self.sensor = sensor
+        self.last_color = None
+
+    def handle_cds(self, data):
+        rgb = self.sensor.get_color_rgb()
+        color = classify_rgb(rgb)
+        distance = self.sensor.get_distance()
+
+        if color != self.last_color:
+            print("COLOR CHANGED:", self.last_color, "->", color, rgb, "distance:", distance)
+            self.last_color = color
+
+            if color == "green":
+                print("GREEN ACTION")
+            elif color == "red":
+                print("RED ACTION")
+            elif color == "black":
+                print("BLACK ACTION")
 
 
 # Spit out the distance sensor information:
 cds = buildhat.ColorDistanceSensor(COLOR_DISTANCE_SENSOR_PORT)
+watcher = ColorWatcher(cds)
+cds.callback(watcher.handle_cds)
 
+
+motor = buildhat.Motor(MOTOR_PORT)
 motor.when_rotated = handle_motor
 info = motor.get()
 print(info)
 motor.float()
-motor.run_for_seconds(10, 100)
-motor.run_for_seconds(10, -100)
-motor.run_for_seconds(10, 100)
-motor.run_for_seconds(10, -100)
-motor.run_for_seconds(10, 100)
-motor.run_for_seconds(10, -100)
-motor.run_for_seconds(10, 100)
-motor.run_for_seconds(10, -100)
-motor.run_for_seconds(10, 100)
-motor.run_for_seconds(10, -100)
-motor.run_for_seconds(10, 100)
-motor.run_for_seconds(10, -100)
-motor.run_for_seconds(10, 100)
-motor.run_for_seconds(10, -100)
-motor.run_for_seconds(10, 100)
-motor.run_for_seconds(10, -100)
 
 
+# Positive equals raising
+# Negative equals lowering
+motor.run_for_seconds(1, -100)
+motor.run_for_seconds(2, 100)
+motor.run_for_seconds(3, -100)
+motor.run_for_seconds(2, 100)
+motor.run_for_seconds(3, -100)
+motor.run_for_seconds(2, 100)
+motor.run_for_seconds(3, -100)
+motor.run_for_seconds(2, 100)
+motor.run_for_seconds(3, -100)
 
+
+motor.when_rotated = None
 motor.coast()
-motor.release == True
-time.sleep(1)
+motor.release = True
 motor.stop()
 
+os._exit(0)
 
 # motor.plimit(1)
 # motor.set_default_speed(10)
@@ -84,11 +124,11 @@ motor.stop()
 # for i in range(8, 10, 1):
 #     motor.start(speed=i)
 #     time.sleep(.1)
-print("Start motor")
-motor.start()
+# print("Start motor")
+# motor.start()
 
-toggle = False
-print("Press any key to toggle (Ctrl+C to quit).")
+# toggle = False
+# print("Press any key to toggle (Ctrl+C to quit).")
 
 # while True:
 #     keyboard.read_event()  # waits for a key event
