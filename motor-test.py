@@ -4,25 +4,22 @@ import buildhat
 from datetime import datetime
 
 # # TWEAKS GO HERE
-# LIGHTS_PORT = 'C'
-CONVEYOR_PORT = 'A'
-CONVEYOR_MOTOR_SPEED = 20
+COLOR_DISTANCE_SENSOR_PORT = 'B'
+MOTOR_PORT = 'A'
+MOTOR_MOTOR_SPEED = 20
 # Speed 10 moves two technic treads per 1/10th of a second.
 
-conveyor = buildhat.Motor(CONVEYOR_PORT)
+motor = buildhat.Motor(MOTOR_PORT)
 
-# conveyor.start(-10)
-# conveyor.coast()
+# motor.start(-10)
+# motor.coast()
 # time.sleep(10)
-# conveyor.run_for_degrees(45)
-# conveyor.run_for_rotations(.5)
+# motor.run_for_degrees(45)
+# motor.run_for_rotations(.5)
 # time.sleep(.4)
-# conveyor.plimit(1)
-conveyor.run_for_seconds(3, -100)
-conveyor.coast()
-conveyor.release == True
-time.sleep(1)
-conveyor.stop()
+# motor.plimit(1)
+
+
 
 def handle_motor(speed, pos, apos):
     """Motor data
@@ -35,28 +32,60 @@ def handle_motor(speed, pos, apos):
     # print("Motor", speed, pos, apos, cds.get_distance(), d.strftime('%Y-%m-%d %H:%M:%S.%f')[:-5])
     print("Motor Speed ()", speed, cds.get_distance(), cds.get_distance(), cds.get_reflected_light(), cds.get_ambient_light(), cds.get_color_rgb(), d.strftime('%Y-%m-%d %H:%M:%S.%f')[:-5])
 
-conveyor.when_rotated = handle_motor
+
+
+# Positive equals raising
+# Negative equals lowering
 
 
 # Spit out the distance sensor information:
-# cds = buildhat.ColorDistanceSensor('D')
+cds = buildhat.ColorDistanceSensor(COLOR_DISTANCE_SENSOR_PORT)
 
-conveyor.plimit(1)
-conveyor.set_default_speed(10)
+motor.when_rotated = handle_motor
+info = motor.get()
+print(info)
+motor.float()
+motor.run_for_seconds(10, 100)
+motor.run_for_seconds(10, -100)
+motor.run_for_seconds(10, 100)
+motor.run_for_seconds(10, -100)
+motor.run_for_seconds(10, 100)
+motor.run_for_seconds(10, -100)
+motor.run_for_seconds(10, 100)
+motor.run_for_seconds(10, -100)
+motor.run_for_seconds(10, 100)
+motor.run_for_seconds(10, -100)
+motor.run_for_seconds(10, 100)
+motor.run_for_seconds(10, -100)
+motor.run_for_seconds(10, 100)
+motor.run_for_seconds(10, -100)
+motor.run_for_seconds(10, 100)
+motor.run_for_seconds(10, -100)
+
+
+
+motor.coast()
+motor.release == True
+time.sleep(1)
+motor.stop()
+
+
+# motor.plimit(1)
+# motor.set_default_speed(10)
 
 # print("Run for degrees 360")
-# conveyor.run_for_degrees(360)
+# motor.run_for_degrees(360)
 # time.sleep(3)
 
 # print("Run for degrees -360")
-# conveyor.run_for_degrees(-360)
+# motor.run_for_degrees(-360)
 # time.sleep(3)
 # print("Accelerating motor...")
 # for i in range(8, 10, 1):
-#     conveyor.start(speed=i)
+#     motor.start(speed=i)
 #     time.sleep(.1)
 print("Start motor")
-conveyor.start()
+motor.start()
 
 toggle = False
 print("Press any key to toggle (Ctrl+C to quit).")
@@ -66,12 +95,12 @@ print("Press any key to toggle (Ctrl+C to quit).")
 #     toggle = not toggle
 #     print(f"Toggled state: {toggle}")
 #     if toggle:
-#         conveyor.start(speed=10)
+#         motor.start(speed=10)
 #     else:
-#         conveyor.stop()
+#         motor.stop()
 
-# # conveyor.stop()
-# conveyor.float()
+# # motor.stop()
+# motor.float()
 # time.sleep(1)
 
 # while True:
